@@ -48,4 +48,4 @@ async def predict(tts_input: TTSInputModel):
 
     audio_data = base64.b64encode(wav_bytes).decode("UTF-8")
 
-    return {"status_code": 200, "audio": audio_data}
+    return {"status_code": 200, "audio": audio_data, "text_ch": text_ch}
