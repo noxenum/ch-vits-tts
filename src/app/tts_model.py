@@ -6,6 +6,7 @@ from src.app.xvector import XVector
 
 
 class TTSModel:
+    device_name = "cuda" if torch.cuda.is_available() else "cpu"
     model = None
     xvector = None
 
@@ -21,6 +22,7 @@ class TTSModel:
             cls.model = Text2Speech.from_pretrained(
                 model_file=model_file,
                 vocoder_file=vocoder_file,
+                device=cls.device_name,
             )
             cls.xvector = XVector(ark_path=xvector_ark_path)
 

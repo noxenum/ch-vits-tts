@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from scipy.io.wavfile import write
 
-from src.app.translation_model import TranslationModel
+from src.app.translation_model_ct2 import TranslationModelCT2
 from src.app.tts_model import TTSModel
 
 app = FastAPI()
@@ -36,7 +36,7 @@ async def ping():
 async def predict(tts_input: TTSInputModel):
     dialect = id_to_dialect[tts_input.voice_id]
 
-    text_ch = TranslationModel.predict(
+    text_ch = TranslationModelCT2.predict(
         dialect=dialect, text_de=tts_input.text_de, beam_size=1
     )
 

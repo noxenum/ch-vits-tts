@@ -8,3 +8,4 @@ torchaudio== 2.2.0
 kaldiio==2.18.0
 espnet==202402
 scipy==1.12.0
+ctranslate2==3.24.0
