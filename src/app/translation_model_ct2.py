@@ -1,3 +1,5 @@
+from typing import Union
+
 import ctranslate2
 import torch
 from transformers.models.t5.tokenization_t5 import T5Tokenizer
@@ -16,29 +18,47 @@ class TranslationModelCT2:
 
             model_path = "/opt/ml/model/t5-ct2"
 
-            cls.model = ctranslate2.Translator(model_path, device=cls.device_name)
+            # float16 not working (outputs <pad> only)
+            cls.model = ctranslate2.Translator(
+                model_path, device=cls.device_name, compute_type="float32"
+            )
             cls.tokenizer = T5Tokenizer.from_pretrained("t5-small")
 
         return cls.model, cls.tokenizer
 
     @classmethod
-    def predict(cls, dialect: str, text_de: str, beam_size: int = 1) -> str:
+    def predict(
+        cls, dialect: str, text_de: Union[str, list[str]], beam_size: int = 1
+    ) -> list[str]:
         model, tokenizer = cls.get_model()
 
-        input_tokens = tokenizer.convert_ids_to_tokens(
-            tokenizer.encode(f"{dialect}: {text_de}")
-        )
+        texts = text_de
+
+        if isinstance(text_de, str):
+            texts = [text_de]
+
+        input_tokens = []
+
+        for text in texts:
+            input_tokens.append(
+                tokenizer.convert_ids_to_tokens(tokenizer.encode(f"{dialect}: {text}"))
+            )
 
         results = model.translate_batch(
-            [input_tokens],
+            input_tokens,
             max_input_length=256,
             beam_size=beam_size,
             num_hypotheses=1,
         )
 
-        output_tokens = results[0].hypotheses[0]
+        preds = []
+        for result in results:
+            output_tokens = result.hypotheses[0]
 
-        pred = tokenizer.decode(
-            tokenizer.convert_tokens_to_ids(output_tokens), skip_special_tokens=True
-        )
-        return pred
+            pred = tokenizer.decode(
+                tokenizer.convert_tokens_to_ids(output_tokens), skip_special_tokens=True
+            )
+
+            preds.append(pred)
+
+        return preds

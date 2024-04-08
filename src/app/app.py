@@ -1,6 +1,8 @@
 import base64
 import io
+from typing import Union
 
+import numpy as np
 from fastapi import FastAPI
 from pydantic import BaseModel
 from scipy.io.wavfile import write
@@ -23,7 +25,7 @@ id_to_dialect = {
 
 
 class TTSInputModel(BaseModel):
-    text_de: str
+    text_de: Union[str, list[str]]
     voice_id: int
 
 
@@ -36,11 +38,17 @@ async def ping():
 async def predict(tts_input: TTSInputModel):
     dialect = id_to_dialect[tts_input.voice_id]
 
-    text_ch = TranslationModelCT2.predict(
+    texts_ch = TranslationModelCT2.predict(
         dialect=dialect, text_de=tts_input.text_de, beam_size=1
     )
 
-    wav, sr = TTSModel.predict(speaker_id=tts_input.voice_id, text_ch=text_ch)
+    wavs = []
+    for text_ch in texts_ch:
+        wav, sr = TTSModel.predict(speaker_id=tts_input.voice_id, text_ch=text_ch)
+        wavs.append(wav)
+
+    wav = np.concatenate(wavs)
+
     bytes_wav = bytes()
     byte_io = io.BytesIO(bytes_wav)
     write(byte_io, sr, wav)
@@ -48,4 +56,4 @@ async def predict(tts_input: TTSInputModel):
 
     audio_data = base64.b64encode(wav_bytes).decode("UTF-8")
 
-    return {"status_code": 200, "audio": audio_data, "text_ch": text_ch}
+    return {"status_code": 200, "audio": audio_data, "text_ch": " ".join(texts_ch)}
